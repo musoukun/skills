@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explainer Video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@500;700&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0d12; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; overflow: hidden; transform-origin: 0 0; }
+  #stage * { box-sizing: border-box; }
+  .layer { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; }
+  .world { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; }
+  .frame { position: absolute; pointer-events: none; }
+  /* 字幕: 明るい画面に重なっても読めるように、暗い帯の上に出す */
+  .cap { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); text-align: center; padding: 12px 36px 14px;
+         background: rgba(11, 13, 18, 0.82); border-radius: 18px; white-space: nowrap; }
+  .cap .kicker { font-size: 18px; font-weight: 700; letter-spacing: 2px; margin-bottom: 4px; min-height: 24px; }
+  .cap .line { font-size: 34px; font-weight: 700; min-height: 46px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<!-- scenes.js = 台本（場面の並び）。core.js = 時刻 t の絵を描く仕組み。parts/ = 場面ごとの描く部品 -->
+<script src="scenes.js"></script>
+<script src="core.js"></script>
+<script src="parts/blocks.js"></script>
+</body>
+</html>

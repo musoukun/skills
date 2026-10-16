@@ -59,7 +59,7 @@ node tools/library.mjs use tank   # 生成済みのモデルを assets/gen/ に�
 ```
 - `polyhaven.mjs get` は素材庫にあればネットに行かずにコピーし、新しく取った物は素材庫にも入れる。`comfy3d.mjs` で作ったモデルも、元画像・設定と一緒に素材庫へ入る。
 - 素材庫の今の中身: 砂漠と曇りの公園の HDRI、乾いた地面・錆びた緑の金属・傷のある金属板のテクスチャ、砂漠の岩、生成した戦車（WWII風・架空）。
-- **git に入れるのは生成モデル（`assets/library/gen/`）だけ**。Poly Haven の素材（`ph/`）はローカルに置き、無ければ `npm run assets` で取り直す。取り方・作り方: `assets/library/README.md`
+- **git に入れるのは作り方だけ**（生成モデルの `source.png` と `meta.json`）。モデル本体（`model.glb`）と Poly Haven の素材（`ph/`）はローカルだけに置く。無ければ Poly Haven は `npm run assets` で取り直し、生成モデルは `node tools/library.mjs use <名前>` が作り直すコマンドを出す。詳しく: `assets/library/README.md`
 
 **主役の物（戦車・機械など）**は、既製の CC0 がまず無い。素材庫に無ければ「Codex で画像を1枚 → ローカルの ComfyUI（Pixal3D）で3D化」で作る。Sketchfab の CC-BY を使うならユーザーに落としてもらう（ログインが要る）。手順と落とし穴: `references/hero-model.md`
 ```powershell

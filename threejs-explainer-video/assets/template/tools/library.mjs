@@ -44,8 +44,18 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
       console.log(`  [PH:${kind}] ${id.padEnd(24)} ${(dirSize(path.join(ph, id)) / 1e6).toFixed(1).padStart(6)} MB  ${mans.map((f) => f.slice(9, -5)).join(',')}`);
     }
   } else if (cmd === 'use' && args[0]) {
-    const src = path.join(LIB, 'gen', args[0], 'model.glb');
-    if (!fs.existsSync(src)) { console.error(`素材庫に gen/${args[0]} がありません（node tools/library.mjs list）`); process.exit(1); }
+    const d = path.join(LIB, 'gen', args[0]), src = path.join(d, 'model.glb');
+    if (!fs.existsSync(src)) {
+      // GLB は git に入れない（作り方だけ入れる）ので、clone した直後は無い → 作り直すコマンドを出す
+      if (!fs.existsSync(path.join(d, 'meta.json'))) { console.error(`素材庫に gen/${args[0]} がありません（node tools/library.mjs list）`); process.exit(1); }
+      const m = JSON.parse(fs.readFileSync(path.join(d, 'meta.json'), 'utf8'));
+      const img = fs.readdirSync(d).find((f) => f.startsWith('source.'));
+      console.error(`gen/${args[0]} のモデル（model.glb）はまだ作られていません。作り方（${m.how ?? ''}）:`);
+      console.error(`  1. ComfyUI を起動する（references/hero-model.md）`);
+      console.error(`  2. node tools/comfy3d.mjs "${path.join(d, img ?? 'source.png')}" assets/gen/${args[0]}.glb --name ${args[0]}${m.subject ? ` --subject "${m.subject.split('。')[0]}"` : ''} ${(m.settings ?? []).map((s) => `--set ${s}`).join(' ')}`);
+      console.error(`  （${m.seconds ? `前回は約${Math.round(m.seconds / 60)}分。` : ''}できたモデルは自動で素材庫に入る）`);
+      process.exit(2);
+    }
     const dest = path.resolve(root, args[1] ?? `assets/gen/${args[0]}.glb`);
     copyFile(src, dest);
     const m = JSON.parse(fs.readFileSync(path.join(LIB, 'gen', args[0], 'meta.json'), 'utf8'));

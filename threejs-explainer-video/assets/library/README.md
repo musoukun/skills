@@ -6,10 +6,10 @@
 ```
 library/
   ph/<id>/            Poly Haven の素材（CC0）。manifest-<解像度>.json に中身と md5   ← git には入れない（ローカルだけ）
-  gen/<名前>/          自分で生成したモデル                                        ← git に入れる（作り直しに時間がかかるため）
-    model.glb          3D モデル（PBR テクスチャ入り）
-    source.png         元の画像
-    meta.json          何か・作り方・設定・かかった時間・ライセンス
+  gen/<名前>/          自分で生成したモデル
+    model.glb          3D モデル（PBR テクスチャ入り、数十MB）              ← git に入れない（ローカルだけ。作り直せる）
+    source.png         元の画像                                            ← git に入れる（作り方）
+    meta.json          何か・作り方・設定・かかった時間・ライセンス          ← git に入れる（作り方）
   CREDITS.md           出どころの一覧
 ```
 
@@ -28,5 +28,5 @@ node tools/codex-image.mjs "<作りたい物の説明>" gen/<名前>.png        
 node tools/comfy3d.mjs gen/<名前>.png assets/gen/<名前>.glb --subject "<説明>" --set 288.value=2048 --set 40.unet_name=pixal3d_int8_convrot.safetensors
 node tools/viewglb.mjs assets/gen/<名前>.glb out/<名前>-views.png                 # 4方向から確かめる
 ```
-- 例題の戦車（gen/tank）は `source.png` を上の2行目に渡せば同じ手順で作り直せる（RTX 5070 Ti で約6分）。乱数のシードはテンプレートで固定なので、ほぼ同じ形になる。
+- **clone した直後は model.glb が無い。** `node tools/library.mjs use <名前>` を実行すると、meta.json と source.png から作り直すコマンドを表示する（例題の戦車は RTX 5070 Ti で約6分）。乱数のシードはテンプレートで固定なので、ほぼ同じ形になる。
 - できたモデルは自動でここ（gen/<名前>/）に入る。使うときは `node tools/library.mjs use <名前>`。

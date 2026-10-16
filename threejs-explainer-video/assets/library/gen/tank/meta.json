@@ -1,0 +1,22 @@
+{
+  "name": "tank",
+  "created": "2026-10-16",
+  "subject": "WWII風の中戦車（架空のデザイン）。オリーブドラブ、汚れ・擦れあり。モデルの正面は +x 向き（シーンでは rotation.y = π で -x に向ける）",
+  "how": "Codex の画像生成（tools/codex-image.mjs）→ ComfyUI 0.37.0 のネイティブ Pixal3D（int8）で3D化（tools/comfy3d.mjs）",
+  "license": "Pixal3D / TRELLIS.2 は MIT。画像の読み取りに使う DINOv3 は Meta の DINOv3 License（輸出規制・軍事開発用途の禁止あり）",
+  "settings": [
+    "288.value=2048",
+    "40.unet_name=pixal3d_int8_convrot.safetensors"
+  ],
+  "seconds": 349,
+  "stats": {
+    "tris": 679460,
+    "verts": 570464,
+    "textures": "base color / normal / roughness / metalness / AO 各 2048",
+    "bbox": [
+      0.887,
+      0.493,
+      0.973
+    ]
+  }
+}

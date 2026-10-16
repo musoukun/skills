@@ -1,0 +1,3 @@
+# 素材庫のうち、Poly Haven の素材（CC0）はローカルだけに置く。取り直しは npm run assets（assets/library/README.md）
+assets/library/ph/
+assets/library/CREDITS.md

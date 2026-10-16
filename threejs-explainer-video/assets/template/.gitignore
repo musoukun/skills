@@ -1,0 +1,6 @@
+# このひな形から作った作業フォルダで、コミットしないもの
+node_modules/
+out/
+.env
+assets/ph/
+assets/gen/

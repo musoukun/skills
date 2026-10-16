@@ -1,0 +1,18 @@
+{
+  "name": "threejs-explainer-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tts": "node tools/tts.mjs",
+    "sheet": "node tools/render.mjs sheet",
+    "video": "node tools/render.mjs video",
+    "assets": "node tools/polyhaven.mjs get goegap 2k && node tools/polyhaven.mjs get cloudy_vondelpark 2k && node tools/polyhaven.mjs get dry_ground_01 2k && node tools/polyhaven.mjs get green_metal_rust 2k && node tools/polyhaven.mjs get blue_metal_plate 1k && node tools/polyhaven.mjs get namaqualand_boulder_03 1k && node tools/library.mjs use tank",
+    "library": "node tools/library.mjs list"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "playwright-core": "1.59.1"
+  }
+}

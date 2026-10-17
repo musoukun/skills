@@ -106,7 +106,7 @@ for (const sc of script.scenes) {
   const style = sc.style ?? tts.style;
   let pcm;
   if (dry) {
-    pcm = new Int16Array(sec(weight(sc.say) / 7.5)); // 日本語の読み上げは 1秒あたり約7.5字
+    pcm = new Int16Array(sec(weight(sc.say) / 6)); // 実測: Gemini TTS の日本語は 1秒あたり 5.5〜6.6字（語り口の指定で変わる）
   } else {
     const key = crypto.createHash('sha1').update(sc.say.trim()).digest('hex').slice(0, 12);
     const file = path.join(cacheDir, `${key}.wav`), metaFile = path.join(cacheDir, `${key}.json`);

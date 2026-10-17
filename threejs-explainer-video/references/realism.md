@@ -50,7 +50,7 @@
 | 小石のつもりが 25m の岩場（41万頂点、23MB） | モデルの名前だけで選んだ | 取る前にサイズを見る（ツールが表示し、60MB を超えたら止まる）。取ったら gltf の accessor の min/max で大きさを確かめる |
 | 影の向きが背景の写真と合わない | 太陽を適当な向きに置いた | `loadHDR` の `sun`（写真のいちばん明るい点の向き）を `addSunlight({ dir })` に |
 | 地面の端が浮く | 霧の色が背景と違う | `loadHDR` の `horizon`（地平線の平均色）を霧の色に |
-| PowerShell の置換が当たらない | `` `${PH}` `` の `` ` `` が PowerShell の特殊文字 | テンプレート文字列を含む置換は Edit ツールで |
+| PowerShell の置換が当たらない・JS の文字列が空になる | PowerShell の "…" の中では `` ` `` が特殊文字で、`${…}` は PowerShell の変数として展開される（JS のテンプレート文字列が `` `700 px ` `` のように壊れる） | JS のテンプレート文字列を含む書き換えは Edit ツールで（PowerShell の文字列に入れない） |
 
 ## 出典
 - LL3M: https://arxiv.org/html/2508.08228v1 / BlenderGym: https://arxiv.org/abs/2504.01786 / SceneCraft: https://arxiv.org/abs/2403.01248

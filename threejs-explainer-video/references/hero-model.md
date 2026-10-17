@@ -52,6 +52,10 @@ node tools/viewglb.mjs assets/gen/tank.glb out/tank-views.png --hdr assets/ph/go
 - `--set 40.unet_name=…`: テンプレートは使わない側の TRELLIS.2 本体のファイルも検査するので、手元にある Pixal3D のファイル名を入れて通す（TRELLIS.2 の int8 5.25GB を落とすならそのままでよい）
 - 出力例（戦車）: 三角形 68万、頂点 57万、GLB 54.7MB、テクスチャ（色・凹凸・粗さ・金属度・AO）各 2048。写っていない後ろ側ももっともらしく作られる。
 
+### 寄ると甘い問題
+- 画像から作ったモデルのテクスチャ（2048）は、全体を写すと十分きれいだが、**寄ると（面の 1m 以内）ぼやけて、しわのような模様が見える**。
+- 仕組みを説明するために寄る面（当たる装甲の面など）だけ、Poly Haven の PBR テクスチャ（金属・塗装）を細かい凹凸（detail normal）として重ねるか、その部分に平らな板（デカール）を重ねる。モデル全体を描き直さない。
+
 ### シーンに置く
 - `loadGLTF('assets/gen/tank.glb', { size: 1 })` → `clone()` → `scale.setScalar(大きさ m)`。向きは viewglb の画で確かめて `rotation.y` を決める（戦車は +x 向きだったので π）。
 - 当たる位置は目で合わせず、`THREE.Raycaster` で砲弾の進む線とモデルの交点を求める（例題の `hook`）。

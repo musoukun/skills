@@ -20,9 +20,10 @@ await document.fonts.load(`${CAP.weight} ${CAP.size}px ${CAP.font}`, tl.scenes.f
 // ---- カットは最初に使うときに組み立てる ----
 const built = new Map();
 let labels = [];
+const labelTexts = new Set(); // 名札に出た文字（あとでフォントの読み込みに足す）
 const ctx = {
   THREE, stage, W, H, tl,
-  label: (pos, text, opt = {}) => labels.push({ pos: pos.clone(), text, ...opt }),
+  label: (pos, text, opt = {}) => { labelTexts.add(text); labels.push({ pos: pos.clone(), text, ...opt }); },
   // シーン id の i 番目の字幕が出る時刻（そのシーンの頭からの秒）。動きを言葉に合わせるのに使う
   cue: (id, i = 0) => {
     const s = tl.scenes.find((s) => s.id === id);
@@ -146,7 +147,9 @@ window.EX = {
 };
 
 // 全カットを先に一度組み立てて描いておく（シェーダのコンパイルを書き出し前に済ませる）
-for (const s of tl.scenes) draw((s.t0 + s.t1) / 2);
+for (const s of tl.scenes) for (const k of [0.2, 0.5, 0.8]) draw(s.t0 + (s.t1 - s.t0) * k);
+// 名札の文字は字幕と別に読み込む（読み込んでいない字＝「→」などは、書き出しで欠けることがある）
+await document.fonts.load(`700 ${Math.round(W * 0.04)}px ${CAP.font}`, [...labelTexts].join('') || 'あ');
 draw(0);
 EX.ready = true;
 

@@ -82,9 +82,18 @@ export function makeShot(stage, { bg = 0x1a1a1a, env = null, fog = null, fov = 3
   const shot = {
     scene, camera, bokeh,
     // カメラを pos に置いて target を見る。dof のピントは target に合わせる
+    // solids に入れた物（戦車・地面の大きな物など）の中にカメラが入ったら、1回だけ警告する（画面が真っ暗・内側が写る、の原因）
+    solids: [],
     look(pos, target) {
       camera.position.copy(pos);
       camera.lookAt(target);
+      for (const o of shot.solids) {
+        if (o.userData._warned) continue;
+        if (new THREE.Box3().setFromObject(o).expandByScalar(-0.05).containsPoint(pos)) {
+          o.userData._warned = true;
+          console.warn(`カメラが ${o.name || '物'} の外形の中に入っています（位置 ${pos.toArray().map((v) => v.toFixed(2)).join(', ')}）。fit の dir を物の外側へ向けてください`);
+        }
+      }
       if (bokeh) bokeh.uniforms.focus.value = pos.distanceTo(target);
     },
     // 縦長の画面は横の画角が狭い（fov 35 で約20°）。target のまわり「横幅 width」がちょうど収まる距離に、
@@ -310,6 +319,22 @@ export function noseProfile(r, h, { nose = 1, tipR = 0, steps = 24 } = {}) {
   return pts;
 }
 // 断面を見せる: 物体の材質に切断面を設定する（plane の法線側だけ残る）
+// 回転体の断面（切り口の面）。cutaway で半分消すと中が空洞に見えるので、切り口にこれを置く。
+//   profile は lathe と同じ [半径, 高さ]。返すメッシュは lathe の軸を含む平面（ローカルの z = 0、+z 向き）にあるので、
+//   lathe と同じ親に入れれば、そのまま切り口に重なる。thickness を渡すと薄い殻（風帽など）の断面＝左右2本の帯になる
+//   material を省くと、削った鋼の断面（明るく、少し粗い金属）。無地の灰色の板はボール紙に見えるので使わない
+export function latheSection(profile, { thickness = null, material = null } = {}) {
+  const side = (s) => {
+    const sh = new THREE.Shape();
+    const outer = profile.map(([r, y]) => [s * r, y]);
+    const inner = thickness ? profile.map(([r, y]) => [s * Math.max(0, r - thickness), y]).reverse() : [[0, profile[profile.length - 1][1]], [0, profile[0][1]]];
+    [...outer, ...inner].forEach(([x, y], i) => (i ? sh.lineTo(x, y) : sh.moveTo(x, y)));
+    return sh;
+  };
+  const m = new THREE.Mesh(new THREE.ShapeGeometry([side(1), side(-1)]), material ?? new THREE.MeshStandardMaterial({ color: 0xd9dee1, metalness: 1, roughness: 0.38, side: THREE.DoubleSide }));
+  m.castShadow = m.receiveShadow = true;
+  return m;
+}
 export function cutaway(object, plane) {
   object.traverse((o) => {
     if (!o.material) return;
@@ -519,7 +544,9 @@ const softDot = () =>
     gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = gr; g.fillRect(0, 0, w, w);
   });
-export function fireball(scene, { count = 40, radius = 1.2, life = 1.6, seed = 3, at = v3(0, 0, 0), dir = v3(0, 0.6, 0) } = {}) {
+//   kind: 'fire'（既定。光って加算で混ざる炎）/ 'dust'（砂ぼこり・煙。光らず、ふつうに重なる。着弾の土煙はこちら）
+export function fireball(scene, { count = 40, radius = 1.2, life = 1.6, seed = 3, at = v3(0, 0, 0), dir = v3(0, 0.6, 0), kind = 'fire' } = {}) {
+  const dust = kind === 'dust';
   const r = rng(seed), tex = softDot();
   const puffs = [];
   for (let i = 0; i < count; i++) {
@@ -528,7 +555,7 @@ export function fireball(scene, { count = 40, radius = 1.2, life = 1.6, seed = 3
     scene.add(s);
     puffs.push({ s, m, off: v3(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1).multiplyScalar(radius * 0.6).add(dir.clone().multiplyScalar(r())), delay: r() * 0.25, size: radius * (0.6 + r() * 0.8) });
   }
-  const hot = new THREE.Color(0xfff2b0), mid = new THREE.Color(0xff8a1e), cool = new THREE.Color(0x3a2a22);
+  const hot = new THREE.Color(dust ? 0xcdb48c : 0xfff2b0), mid = new THREE.Color(dust ? 0xa08a6a : 0xff8a1e), cool = new THREE.Color(dust ? 0x6e604e : 0x3a2a22);
   return {
     update(t, fade = 1) {
       for (const p of puffs) {
@@ -539,8 +566,9 @@ export function fireball(scene, { count = 40, radius = 1.2, life = 1.6, seed = 3
         p.s.position.copy(at).addScaledVector(p.off, 0.3 + grow);
         p.s.scale.setScalar(p.size * (0.3 + grow));
         p.m.color.copy(k < 0.35 ? hot.clone().lerp(mid, k / 0.35) : mid.clone().lerp(cool, (k - 0.35) / 0.65));
-        p.m.blending = k < 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending;
-        p.m.opacity = (1 - k) * (k < 0.5 ? 1 : 0.7) * fade;
+        p.m.blending = !dust && k < 0.5 ? THREE.AdditiveBlending : THREE.NormalBlending;
+        p.m.toneMapped = dust;
+        p.m.opacity = (1 - k) * (dust ? 0.5 : k < 0.5 ? 1 : 0.7) * fade;
         p.s.visible = p.s.visible && fade > 0;
       }
     },

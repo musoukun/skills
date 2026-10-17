@@ -74,6 +74,20 @@ export const scenes = {
 | `slowToStop(t, t0)` | t0 からなめらかに減速して止まる（1回だけ止めるとき） |
 | `camKeys([{ t, target, width, dir }])` → `(T) => { target, width, dir }` | カメラのキーフレーム。target / dir は関数でも可。カットをまたいで続くカメラに |
 | `burst.update(t, fade)` / `fireball.update(t, fade)` | fade（0〜1）で、止めたまま薄くする |
+| `fireball(parent, { kind: 'dust' })` | 砂ぼこり・土煙（光らず、ふつうに重なる）。既定の `'fire'` で土煙を作ると炎に見える |
+| `latheSection(profile, { thickness })` | 回転体の断面（削った鋼の質感）。`cutaway` で消した側に、同じ親の中で重ねる。`thickness` で薄い殻（風帽など）の2本の帯 |
+| `shot.solids.push(物)` | その物の外形の中にカメラが入ったら、書き出しのログに警告が出る（戦車の中から写して真っ暗、を防ぐ） |
+
+### 使い方の注意
+- **`burst` / `fireball` の第1引数は scene でなくてよい**（どの Object3D にも足せる）。1つの舞台を複数のカットで共有するときは、カットごとの `THREE.Group` に入れて `group.visible` で切り替えると、前のカットの火花が残って写らない。
+- **`findSlope` は重い**（68万三角形の戦車で 40〜80 秒）。モデルに対して一度だけ求め、置いた場所に変換して使い回す（例題の `placeTank`）。カットごとの作り直しや、プレビューのたびの再計算が気になるなら、求めた点と法線を `console.log` で出して定数として貼る。
+- **探す前に向きをそろえる**（`headingYaw`）。モデルを別の向きに回したまま `findSlope` を -x から撃つと、斜面が見つからず `null` になる。
+- **HDRI を回す**: `scene.backgroundRotation` と `scene.environmentRotation`（どちらも Euler）を同じ角度で回すと、背景と映り込みがそろって回る。太陽（`addSunlight` の dir）も同じ角度だけ y 軸まわりに回し、影の向きが背景の太陽と合うかを still で確かめる。背景の写真に人工物（小屋・車など）が写っていたら、回して画面の外へ出す。
+- **`timeWarp` の時刻**: `at` は**世界の時刻**（物が動く時間。止まる前は カットの時刻と同じ）、`until` は**カットの時刻**（再開したい字幕の時刻 `ctx.cue`）。止めを2回以上入れるときは、2回目の `at` も世界の時刻で書く（例: 風帽がつぶれる世界時刻 `tHit + 0.12` と、中の先端が届く世界時刻 `tBite`）。カットの時刻から計算しない。
+- **`loadGLTF(url, { size })` の原点は底面の中心**（入れ物の y = 0 が物の底）。地面に置くときは y に地面の高さを入れるだけでよい（中心の高さを入れると浮く）。
+- **寄ったときのボケ**: `dof.aperture` はカット全体で1つの値。寄った画ほどボケが強くなって主役まで甘くなるので、`shot.bokeh.uniforms.aperture.value` を写す幅に合わせて小さくする（例: `aperture = 0.004 * clamp(width / 3, 0.25, 1)`）。
+- **`cutaway` ＋ `latheSection`**: 切る面はワールド座標。回転体を自分の軸まわりに回している（ライフリングの回転）と、断面がずれる。断面を見せる間は軸まわりの回転を止める（角度を 0 か 2π の倍数にそろえる）。
+- **名札・字幕の字**: 字幕と名札に出た字は、書き出し前にまとめてフォントを読み込む。それでも記号（矢印など）はフォントに無いことがあるので、「→」より「から」「で」などの言葉で書く。
 
 ## 見た目を本物らしくする
 素材（HDRI・PBR テクスチャ・モデル）の集め方、`loadHDR` / `loadPBR` / `loadGLTF` / `terrain` / `scatter` / `waterSurface` / `burst({ trail | instance })` の使いどころ、モーションブラー・bloom の調整は `references/realism.md` にまとめた。

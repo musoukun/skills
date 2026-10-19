@@ -1,0 +1,14 @@
+{
+  "name": "animated-arch-diagram",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "info": "node tools/render.mjs info",
+    "sheet": "node tools/render.mjs sheet",
+    "video": "node tools/render.mjs video diagram",
+    "carry": "node tools/render.mjs video carry --page carry.html"
+  },
+  "devDependencies": {
+    "playwright-core": "1.59.1"
+  }
+}

@@ -21,3 +21,5 @@ cp -R skills/screenshot-annotate ~/.claude/skills/
 - **[threejs-explainer-video](threejs-explainer-video/SKILL.md)**: ものの仕組みを 3D で見せる縦型の解説ショート動画（字幕・男性ナレーション付き MP4）を、Three.js とコードだけで作る。参考動画の 1 秒 1 枚の分解、Gemini TTS の声（セリフが同じなら使い回し）、CC0 素材（Poly Haven）の取得、Codex の画像 → ローカル ComfyUI での 3D 化、「仕組みが働く瞬間に時間を止めて説明する」ための部品を同梱。
 
 - **[pattern-abstraction](pattern-abstraction/SKILL.md)**: 要件・問い合わせ・事例の集まりを、対応が変わる分かれ目で階層に分けて整理する（パターン分け・ケース分け）。上の階層ほど根本の問い、下の階層は「なぜそうなるか」で分け、名前は相手の側で何が起きているかで付ける。
+
+- **[animated-arch-diagram](animated-arch-diagram/SKILL.md)**: 構成図や処理の流れを、X などに貼れる動く図（MP4 / GIF）にする。箱と線の構成図型と、1 つのデータが手順を通って変わっていく様子を見せる運搬型の 2 つの型がある。Playwright で 1 コマずつ撮って ffmpeg で書き出すテンプレートを同梱。

@@ -23,3 +23,5 @@ cp -R skills/screenshot-annotate ~/.claude/skills/
 - **[pattern-abstraction](pattern-abstraction/SKILL.md)**: 要件・問い合わせ・事例の集まりを、対応が変わる分かれ目で階層に分けて整理する（パターン分け・ケース分け）。上の階層ほど根本の問い、下の階層は「なぜそうなるか」で分け、名前は相手の側で何が起きているかで付ける。
 
 - **[animated-arch-diagram](animated-arch-diagram/SKILL.md)**: 構成図や処理の流れを、X などに貼れる動く図（MP4 / GIF）にする。箱と線の構成図型と、1 つのデータが手順を通って変わっていく様子を見せる運搬型の 2 つの型がある。Playwright で 1 コマずつ撮って ffmpeg で書き出すテンプレートを同梱。
+
+- **[skill-for-lower-model](skill-for-lower-model/SKILL.md)**: 上のモデル（Opus など）で動いているスキルを読み、下のモデル（Sonnet・Haiku など）でも動かすために直す必要がある点を、スキルの文の引用つきで助言する。下のモデルが崩れやすい 8 つの観点の点検表と、2 つのスキルで実際に起きた例を同梱。

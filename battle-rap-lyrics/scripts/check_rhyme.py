@@ -3,6 +3,7 @@
 # dependencies = ["fugashi", "unidic-lite"]
 # ///
 """歌詞の行の終わりの母音を出して、前の行と何個そろっているかを数える。
+行の中の韻も数える。空白で区切った言葉どうしで、終わりから母音が何個そろうかを見る。
 
 漢字の読みは fugashi（辞書は unidic-lite）で、前後の言葉を見て付ける。
 読みを間違えることがあるので、出てきた「よみ」も見る。
@@ -80,6 +81,16 @@ def match_count(a, b):
     return n
 
 
+def inner_count(line):
+    """行を空白で区切り、言葉どうしで終わりの母音がいちばん多くそろう数を返す。"""
+    segs = [to_vowels(to_hira(seg)) for seg in line.split()]
+    best = 0
+    for i in range(len(segs)):
+        for j in range(i + 1, len(segs)):
+            best = max(best, match_count(segs[i], segs[j]))
+    return best
+
+
 def read_blocks(lines):
     """タグの行を飛ばし、空行で区切った塊のリストにする。"""
     blocks, cur = [], []
@@ -110,6 +121,8 @@ def main():
         lines = sys.stdin.read().splitlines()
 
     hits = 0
+    inner_hits = 0
+    total = 0
     for block in read_blocks(lines):
         prev = None
         for line in block:
@@ -124,10 +137,16 @@ def main():
                 if n >= RHYME_MIN:
                     mark += " ◎"
                     hits += 1
-            print(f"{line}\n    よみ: {hira}  終わり: {tail}  {mark}")
+            m = inner_count(line)
+            inner = f"行の中 {m}" + (" ◎" if m >= RHYME_MIN else "")
+            if m >= RHYME_MIN:
+                inner_hits += 1
+            total += 1
+            print(f"{line}\n    よみ: {hira}  終わり: {tail}  {mark}  {inner}")
             prev = vowels
         print()
-    print(f"前の行と母音が {RHYME_MIN} 個以上そろった行: {hits}")
+    print(f"前の行と母音が {RHYME_MIN} 個以上そろった行: {hits} / {total}")
+    print(f"行の中で母音が {RHYME_MIN} 個以上そろった行: {inner_hits} / {total}")
 
 
 if __name__ == "__main__":

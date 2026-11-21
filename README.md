@@ -27,3 +27,5 @@ cp -R skills/screenshot-annotate ~/.claude/skills/
 - **[skill-for-lower-model](skill-for-lower-model/SKILL.md)**: 上のモデル（Opus など）で動いているスキルを読み、下のモデル（Sonnet・Haiku など）でも動かすために直す必要がある点を、スキルの文の引用つきで助言する。下のモデルが崩れやすい 8 つの観点の点検表と、2 つのスキルで実際に起きた例を同梱。
 
 - **[battle-rap-lyrics](battle-rap-lyrics/SKILL.md)**: 日本語の MC バトル風ラップの歌詞を、Suno の歌詞欄に貼れる形で書く。ユーザーが書いた歌詞の行は残したまま整え、あらすじを渡されたら出来事を捻って短い言い切りに縮める。MC バトルの技、決め手の行の文の型、韻の踏み方をまとめた資料を同梱。
+
+- **[lyric-scroll-video](lyric-scroll-video/SKILL.md)**: mp3 から、曲名・ジャケット・動く背景・音の波形・下から流れる歌詞が入った縦長の動画（1080x1920 の mp4）を作る。歌詞とジャケットは mp3 のタグから読み、声を聞き取って歌詞を歌い出しの時刻に合わせる。動画を作るスクリプトと、歌詞の時刻を出すスクリプトを同梱。

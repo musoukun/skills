@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 W, H = 1080, 1920
 SUNG_ROW = 2  # 歌っている行を、歌詞の窓の上から何段目に置くか（0 がいちばん上）
+PAUSE_SEC = 4.0  # 歌い終わりから次の歌い出しまでがこの秒数より長いと、間奏とみなして歌詞を止める
 FONT_CANDIDATES = {
     "bold": [
         "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc",
@@ -184,6 +185,7 @@ def scroll_expr(lines, row_starts, pad_top, line_h, scroll, dur, timings, start=
     歌っている行が、窓の上から SUNG_ROW 段目に来るようにする。
     timings があれば、行ごとの歌い出しの時刻に合わせて、行と行の間をまっすぐつなぐ。
     even も付いていれば、最初の行と最後の行の歌い出しだけを使い、その間を一定の速さで流す。
+    どちらでも、間奏の間は歌詞を止める。even では、間奏で区切った区間ごとに一定の速さで流す。
     timings が無ければ、start 秒から end 秒までを一定の速さで流す。start より前は動かない。
     """
     lead = pad_top - SUNG_ROW * line_h
@@ -195,13 +197,25 @@ def scroll_expr(lines, row_starts, pad_top, line_h, scroll, dur, timings, start=
         return f"min({scroll},max(0,{lead}+clip((t-{s:.2f})/{e - s:.2f},0,1)*{scroll}))"
     if len(timings) != len(lines):
         sys.exit(f"時刻の行数（{len(timings)}）が歌詞の行数（{len(lines)}）と合わない。同じ歌詞で時刻を作り直してほしい。")
-    keys = []
+    sung = []
     for line, row, item in zip(lines, row_starts, timings):
         t = float(item["t"])
-        if line and (not keys or t > keys[-1][0]):
-            keys.append((t, lead + row * line_h))
-    if even and len(keys) > 2:
-        keys = [keys[0], keys[-1]]
+        if line and (not sung or t > sung[-1][0]):
+            sung.append((t, lead + row * line_h, item.get("end")))
+    # 歌い終わりから次の歌い出しまでが PAUSE_SEC 秒より長い所は、間奏とみなす。
+    # 歌い終わりまでに次の行を定位置に送り、次の歌い出しまで止める。
+    # parts は、間奏で区切った、止まらずに流れる区間の並び
+    parts = [[]]
+    for i, (t, y, end) in enumerate(sung):
+        parts[-1].append((t, y))
+        if i + 1 < len(sung) and end is not None:
+            t1, y1 = sung[i + 1][0], sung[i + 1][1]
+            if t1 - float(end) > PAUSE_SEC and float(end) > t:
+                parts[-1].append((float(end), y1))
+                parts.append([])
+    if even:
+        parts = [[part[0], part[-1]] if len(part) > 2 else part for part in parts]
+    keys = [key for part in parts for key in part]
     expr = str(keys[0][1])
     for (t0, y0), (t1, y1) in zip(keys, keys[1:]):
         expr += f"+{y1 - y0}*clip((t-{t0:.2f})/{t1 - t0:.2f},0,1)"

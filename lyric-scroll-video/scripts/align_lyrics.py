@@ -7,6 +7,7 @@
 
 聞き取った文字と歌詞の文字を突き合わせ、合った所の時刻を行の時刻にする。
 合う文字が無かった行は、前後の行の時刻から文字数で割り振る。
+合った行には、歌い終わりの時刻も付ける。間奏で歌詞を止めるのに使う。
 書き出した JSON は make_lyric_video.py の --timings に渡す。
 
     uv run align_lyrics.py 曲.mp3 -o timings.json
@@ -61,17 +62,18 @@ def transcribe(mp3, model_name, prompt):
 
 def heard_chars(words):
     """聞き取った文字を 1 文字ずつ、時刻を付けて並べる。"""
-    chars, times = [], []
+    chars, times, ends = [], [], []
     for w in words:
         text = normalize(w["text"])
         for i, ch in enumerate(text):
             chars.append(ch)
             times.append(w["start"] + (w["end"] - w["start"]) * i / max(1, len(text)))
-    return "".join(chars), times
+            ends.append(w["end"])
+    return "".join(chars), times, ends
 
 
 def align(lines, words, duration):
-    heard, times = heard_chars(words)
+    heard, times, word_ends = heard_chars(words)
     norm = [normalize(line) for line in lines]
     starts, pos = [], 0
     for n in norm:
@@ -81,13 +83,14 @@ def align(lines, words, duration):
     total = max(1, len(lyric))
 
     # 歌詞の文字の位置 → 聞き取った時刻
-    at = {}
+    at, at_end = {}, {}
     matcher = difflib.SequenceMatcher(None, lyric, heard, autojunk=False)
     for a, b, size in matcher.get_matching_blocks():
         if size < 2:
             continue
         for k in range(size):
             at[a + k] = times[b + k]
+            at_end[a + k] = word_ends[b + k]
 
     # 1 文字あたりの秒数。合った所の最初と最後から出す
     if len(at) >= 2:
@@ -102,9 +105,12 @@ def align(lines, words, duration):
         if hits:
             p = hits[0]
             t = at[p] - (p - starts[i]) * rate
-            result.append({"text": lines[i], "t": t, "matched": True})
+            # 歌い終わりの時刻。合った最後の文字が入っている単語の終わりに、残りの文字の分を足す
+            q = hits[-1]
+            end = at_end[q] + (starts[i] + len(n) - 1 - q) * rate
+            result.append({"text": lines[i], "t": t, "end": end, "matched": True})
         else:
-            result.append({"text": lines[i], "t": None, "matched": False})
+            result.append({"text": lines[i], "t": None, "end": None, "matched": False})
 
     # 合わなかった行は、前後の合った行の間を文字数で割り振る
     known = [i for i, r in enumerate(result) if r["matched"]]
@@ -129,6 +135,8 @@ def align(lines, words, duration):
     for r in result:
         r["t"] = round(min(duration, max(last_t, r["t"])), 2)
         last_t = r["t"]
+        if r["end"] is not None:
+            r["end"] = round(min(duration, max(r["t"], r["end"])), 2)
     return result, heard, times
 
 
@@ -162,7 +170,8 @@ def main():
     sung = [r for r in result if r["text"]]
     hit = sum(1 for r in sung if r["matched"])
     for r in sung:
-        print(f"{r['t']:7.2f}  {'○' if r['matched'] else '×'}  {r['text']}")
+        end = f"{r['end']:7.2f}" if r["end"] is not None else "      -"
+        print(f"{r['t']:7.2f} {end}  {'○' if r['matched'] else '×'}  {r['text']}")
     print(f"done: {args.out}  ({len(sung)} 行のうち {hit} 行が聞き取りと合った)")
 
 

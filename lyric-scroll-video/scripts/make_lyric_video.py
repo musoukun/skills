@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -306,6 +307,39 @@ def bg_layer(style, cover, tmp, fps):
     sys.exit(f"背景の種類が分からない: {style}")
 
 
+def shrink(path, max_mb, dur, tmp):
+    """動画が max_mb より大きいときに、max_mb のすぐ下に収まるように映像を圧縮し直す。
+
+    1MB は 1,000,000 バイトで数える。投稿先が 1,048,576 バイトで数えていても、上限を超えない。
+    映像のビットレートを決めて 2 回通しで書き出す。音はそのまま写す。
+    """
+    limit = max_mb * 1_000_000
+    size = os.path.getsize(path)
+    if size <= limit:
+        print(f"{size / 1e6:.1f}MB で、{max_mb:g}MB 以下なので圧縮しない")
+        return
+    out = os.path.join(tmp, "small.mp4")
+    log = os.path.join(tmp, "pass")
+    target = limit * 0.99
+    for _ in range(3):
+        # 音（192k）と mp4 の入れ物の分を引いた残りを、映像に使う
+        v_kbps = int(target * 8 / dur / 1000 - 192 - 12)
+        if v_kbps < 300:
+            sys.exit(f"{max_mb:g}MB に収めるには映像が粗くなりすぎる。上限を上げてほしい。")
+        base = ["ffmpeg", "-v", "error", "-y", "-i", path, "-c:v", "libx264", "-preset", "slow",
+                "-b:v", f"{v_kbps}k", "-passlogfile", log]
+        subprocess.run(base + ["-pass", "1", "-an", "-f", "mp4", os.devnull], check=True)
+        subprocess.run(base + ["-pass", "2", "-pix_fmt", "yuv420p", "-c:a", "copy",
+                               "-movflags", "+faststart", out], check=True)
+        small = os.path.getsize(out)
+        if small <= limit:
+            shutil.move(out, path)
+            print(f"圧縮した: {size / 1e6:.1f}MB → {small / 1e6:.1f}MB")
+            return
+        target *= limit / small * 0.99
+    sys.exit(f"{max_mb:g}MB に収まらなかった。")
+
+
 def build(args):
     meta = probe(args.mp3)
     if args.title:
@@ -322,7 +356,10 @@ def build(args):
     fps = args.fps
 
     with tempfile.TemporaryDirectory() as tmp:
-        cover = load_cover(args.mp3, tmp) if meta["has_cover"] else None
+        if args.cover:
+            cover = Image.open(args.cover).convert("RGB")
+        else:
+            cover = load_cover(args.mp3, tmp) if meta["has_cover"] else None
         fg = os.path.join(tmp, "fg.png")
         bg_inputs, bg_graph = bg_layer(args.bg, cover, tmp, fps)
 
@@ -379,6 +416,8 @@ def build(args):
                     "-r", str(fps), "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
                     args.out]
         subprocess.run(cmd, check=True)
+        if args.max_mb and args.preview is None:
+            shrink(args.out, args.max_mb, dur, tmp)
     print(f"done: {args.out}  (歌詞 {'あり' if has_lyrics else 'なし'}, {dur:.1f} 秒)")
 
 
@@ -396,9 +435,12 @@ def main():
                    help="--timings を使わないとき、歌詞を流し終える秒。指定が無ければ曲の終わり")
     p.add_argument("--no-lyrics", action="store_true", help="歌詞を出さず、ジャケットを大きく出す")
     p.add_argument("--title", help="曲名を上書きする")
+    p.add_argument("--cover", help="ジャケットにする画像。mp3 に入っているジャケットより優先する")
     p.add_argument("--artist", default="musoukun",
                    help="「by 〜」に出す名前。初期値は musoukun で、mp3 のタグの名前は使わない。空文字で非表示")
     p.add_argument("--fps", type=int, default=30)
+    p.add_argument("--max-mb", type=float, metavar="MB",
+                   help="動画がこの大きさを超えたら、すぐ下に収まるように圧縮し直す。50MB までの投稿先なら 49 を渡す")
     p.add_argument("--bg", default="dots", choices=["dots", "grain", "blur", "tiles"],
                    help="背景。dots=色の点（初期値）、grain=2色グラデ＋粒子、blur=ぼかし、tiles=ジャケットを並べる")
     p.add_argument("--font-bold")

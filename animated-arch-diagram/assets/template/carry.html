@@ -15,7 +15,8 @@
 <body>
 <svg id="stage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg>
 <!-- 運搬型: carry-spec.js = 中身（駅と出来事の並び）。carry.js = それを時刻 t の絵にする加工機 -->
-<script src="carry-spec.js"></script>
+<!-- 別の中身を見るときは carry.html?spec=examples/carry-loop-spec.js のように指定する（既定は carry-spec.js） -->
+<script>document.write('<script src="' + (new URLSearchParams(location.search).get('spec') || 'carry-spec.js') + '"><\/script>');</script>
 <script src="carry.js"></script>
 </body>
 </html>

@@ -1,142 +1,93 @@
 // carry-spec.js — 運搬型の中身。書き換えるのはこのファイルだけ。書式は references/carry-spec.md
-// 例: 問い合わせチャットが返事を 1 回作るまで（架空の例）。AI は判断して答えるだけ、処理と確かめはプログラム。2 周で返事が決まる
+// 例: レシートの写真 1 枚が、家計簿の 1 行になるまで（架空の例）。左から右へ流れて終わる一方通行
+// 処理が最初の段へ戻る（ループする）ときの見本は examples/carry-loop-spec.js
+const ME = '#e2e8f0'; // 人
 const PG = '#22d3ee'; // プログラム
 const AI = '#f59e0b'; // AI
-const NEW = '#34d399'; // 処理で新しく増えたもの
-const CU = '#e2e8f0'; // お客様
+const NEW = '#34d399'; // できあがった物
 
 window.SPEC = {
-  title: '問い合わせチャットが返事を作るしくみ',
-  subtitle: '「返品したい」という質問を 1 つ流した例',
+  title: 'レシートの写真が、家計簿の 1 行になるしくみ',
+  subtitle: 'パン屋のレシートを 1 枚流した例',
+
+  // 最初に「何を、何に変える物か」を 1 枚で見せる
+  opening: {
+    from: { label: 'レシートの写真', sub: 'スマホで撮った 1 枚', color: ME, kicker: '入れる物' },
+    to: { label: '家計簿の 1 行', sub: '日付・お店・金額', color: NEW, kicker: 'できる物' },
+    via: '家計簿アプリ',
+    caption: '家計簿アプリは、レシートの写真を家計簿の 1 行に変える',
+  },
 
   // 左から右へ一列に並べる。同じ役割は同じ色
   stations: [
-    { id: 'cust', label: 'お客様', sub: 'チャット画面', color: CU, x: 105, w: 150 },
-    { id: 'p1', label: '① 指示をまとめる', sub: 'プログラム', color: PG, x: 385 },
-    { id: 'p2', label: '② 判断して答える', sub: 'AI', color: AI, x: 725 },
-    { id: 'p3', label: '③ 処理する', sub: 'プログラム', color: PG, x: 1065 },
-    { id: 'p4', label: '④ 次へ回す', sub: 'プログラム', color: PG, x: 1405 },
+    { id: 'me', label: 'あなた', sub: '人', color: ME, x: 105, w: 150 },
+    { id: 'p1', label: '① 文字を読む', sub: 'プログラム', color: PG, x: 385 },
+    { id: 'p2', label: '② 項目に分ける', sub: 'AI', color: AI, x: 725 },
+    { id: 'p3', label: '③ 家計簿に足す', sub: 'プログラム', color: PG, x: 1065 },
+    { id: 'book', label: '家計簿', sub: 'できあがり', color: NEW, x: 1405, w: 190 },
   ],
 
-  // line = となりの駅へまっすぐ。under = 下を回る（戻り道）。2 本の under は、外側を深くして入れ子にする（交差させない）
+  // 一方通行なので、となりの駅への line だけ。戻り道（under）は描かない
   paths: [
-    { id: 'c1', from: 'cust', to: 'p1', kind: 'line' },
+    { id: 'm1', from: 'me', to: 'p1', kind: 'line' },
     { id: '12', from: 'p1', to: 'p2', kind: 'line' },
     { id: '23', from: 'p2', to: 'p3', kind: 'line' },
-    { id: '34', from: 'p3', to: 'p4', kind: 'line' },
-    { id: 'back', from: 'p4', to: 'p1', kind: 'under', depth: 130, dx: [-50, 0], label: '返事がまだなら、① へ戻る' },
-    { id: 'reply', from: 'p4', to: 'cust', kind: 'under', depth: 225, dx: [50, 0], label: '返事が決まったら、お客様へ' },
+    { id: '3b', from: 'p3', to: 'book', kind: 'line' },
   ],
 
-  // 駅での出来事（at）と、線の上の移動（move）を交互に並べる。move で運ばれる札は、直前の駅の out
+  // 駅に着く（at）→ 処理の絵（scene）→ 次の駅へ（move）の順に並べる
+  // 吹き出しは 受け取る（take）・すること（act）・渡す（give）の 3 行。give を省くと、札（out）と同じ言葉になる
   beats: [
     {
-      at: 'cust', dur: 3.2, loop: 1, kicker: '1 周目', caption: 'お客様の質問が届く', out: { text: '質問', color: CU },
-      bubble: { title: 'お客様の質問', keep: 'next', lines: [{ text: '先週届いた靴を返品したい' }] },
+      at: 'me', dur: 3.0, caption: 'あなたが、レシートを撮って送る', out: { text: 'レシートの写真', color: ME },
+      bubble: { title: 'あなたがすること', act: 'レシートをスマホで撮って送る' },
     },
-    { move: 'c1' },
+    { move: 'm1' },
     {
-      at: 'p1', dur: 5.0, loop: 1, caption: 'プログラムが、AI への指示をまとめる', out: { text: 'AI への指示', color: PG },
-      bubble: {
-        // 毎回同じものと、増えていくものは囲みを分ける。中身は「名前：何のためか」で書く
-        title: 'プログラムがまとめる', w: 420, dx: -130,
-        groups: [
-          {
-            label: '毎回同じ指示（はじめに渡す決まり）', color: PG, fly: '毎回同じ指示',
-            lines: [
-              { text: '応対の決まり：話し方と、確かめる順番', size: 19 },
-              { text: 'できること：探す・返事・つなぐ', size: 19 },
-            ],
-          },
-          {
-            label: '会話の記録（話すたびに増える）', color: CU, fly: '会話の記録', dashed: true,
-            lines: [{ text: 'お客様：靴を返品したい', size: 19 }],
-          },
-        ],
-      },
+      at: 'p1', dur: 3.4, caption: 'プログラムが、写真から文字を読み取る', out: { text: '読み取った文字', color: PG },
+      bubble: { title: 'プログラムが読む', take: 'レシートの写真', act: '写真の中の文字を読み取る' },
+    },
+    {
+      scene: { kind: 'fetch', title: '写真から、文字だけを取り出す', from: [{ label: 'レシートの写真', color: ME }],
+        items: ['ベーカリー森', '2026/10/05', 'クロワッサン 240円', '食パン 400円', '合計 640円'], to: { label: '読み取った文字', color: PG } },
+      dur: 2.6, caption: '店名・日付・品名・値段が、ただの文字の並びになる',
     },
     { move: '12' },
     {
-      at: 'p2', dur: 4.6, loop: 1, caption: 'AI が判断して、「規約を探す」と答える', out: { text: '答え：探す', color: AI },
-      bubble: {
-        title: 'AI が判断して答える',
-        lines: [
-          { text: '答え：返品の規約を探す', bold: true, color: AI },
-          { text: '決まりの文章：手続きを案内する前に、規約を確かめる', dim: true, size: 18, gap: 6 },
-        ],
-      },
+      at: 'p2', dur: 3.4, caption: 'AI が、どの文字が日付・お店・金額かを見分ける', out: { text: '日付・お店・金額', color: AI },
+      bubble: { title: 'AI が見分ける', take: '読み取った文字', act: 'どれが日付・お店・金額かを決める' },
+    },
+    {
+      scene: { kind: 'transform', title: 'ばらばらの文字を、決まったマスに入れる',
+        from: { label: 'ばらばらの文字', note: '並び方はレシートごとに違う', color: PG },
+        to: { label: '項目のマス', note: '日付・お店・金額の 3 つ', color: AI } },
+      dur: 2.6, caption: 'レシートごとに違う並びが、同じ形のマスにそろう',
     },
     { move: '23' },
     {
-      at: 'p3', dur: 4.0, loop: 1, caption: 'プログラムが、規約を検索する', out: { text: '見つけた規約', color: NEW },
-      bubble: {
-        title: 'プログラムが処理する',
-        lines: [{ text: '規約を検索', bold: true }, { text: '→ 返品の節 2 つ', color: NEW }, { text: '→ よくある質問 1 つ', color: NEW }],
-      },
+      at: 'p3', dur: 3.4, caption: 'プログラムが、今月の家計簿に 1 行足す', out: { text: '今月の家計簿', color: NEW },
+      bubble: { title: 'プログラムが足す', take: '日付・お店・金額', act: '今月の家計簿の終わりに 1 行足す' },
     },
-    { move: '34' },
     {
-      at: 'p4', dur: 2.8, loop: 1, caption: '返事はまだ無いので、規約を会話の記録に足して ① へ戻る',
-      bubble: { title: 'プログラムが次へ回す', lines: [{ text: '返事はまだ無い' }, { text: '→ 規約を会話の記録に足して ① へ', bold: true, color: NEW }] },
+      scene: { kind: 'merge', title: '今までの家計簿に、新しい 1 行を合わせる',
+        a: { label: '今月の家計簿', items: ['10/01 スーパー 2,380円', '10/03 薬局 980円'], color: NEW },
+        b: { label: '新しい 1 行', items: ['10/05 ベーカリー森 640円'], color: AI },
+        to: { label: '今月の家計簿', items: ['10/01 スーパー 2,380円', '10/03 薬局 980円', '10/05 ベーカリー森 640円'], color: NEW } },
+      dur: 2.6, caption: '前からある行はそのまま、新しい行が下に増える',
     },
-    { move: 'back', dur: 1.8 },
-
-    // ---- 2 周目: 前の周で増えたものだけを光らせ、ほかは薄くする ----
+    { move: '3b' },
     {
-      at: 'p1', dur: 4.6, loop: 2, kicker: '2 周目', caption: '見つけた規約が、会話の記録に加わる', out: { text: 'AI への指示', color: PG },
-      bubble: {
-        title: 'プログラムがまとめる', w: 420, dx: -130,
-        groups: [
-          {
-            label: '毎回同じ指示（はじめに渡す決まり）', color: PG, at: 0.1,
-            lines: [
-              { text: '応対の決まり：話し方と、確かめる順番', size: 19, dim: true, at: 0.2 },
-              { text: 'できること：探す・返事・つなぐ', size: 19, dim: true, at: 0.2 },
-            ],
-          },
-          {
-            label: '会話の記録（話すたびに増える）', color: CU, dashed: true, at: 0.3,
-            lines: [
-              { text: 'お客様：靴を返品したい', size: 19, dim: true, at: 0.4 },
-              { text: 'AI：規約を探す', size: 19, dim: true, at: 0.4 },
-              { text: '＋ 見つけた規約：返品の節 2 つ ほか', size: 19, bold: true, color: NEW, mark: true, at: 1.1 },
-            ],
-          },
-        ],
-      },
+      at: 'book', dur: 3.0, caption: '家計簿に、今月の合計が出る',
+      bubble: { title: 'できあがった家計簿', take: '今月の家計簿', act: '費目ごとに足して、合計を出す', give: '今月の合計 4,000円' },
     },
-    { move: '12' },
     {
-      at: 'p2', dur: 4.8, loop: 2, caption: 'AI が判断して、注文番号を聞く返事を書く', out: { text: '答え：返事', color: AI },
-      bubble: {
-        title: 'AI が判断して答える',
-        lines: [
-          { text: '答え：返事を出す', bold: true, color: AI },
-          { text: '「注文番号を教えていただけますか？」' },
-          { text: '規約：返品は届いてから 30 日以内', dim: true, size: 18, gap: 6 },
-        ],
-      },
-    },
-    { move: '23' },
-    {
-      at: 'p3', dur: 4.4, loop: 2, caption: 'プログラムが、送ってよいかを確かめる', out: { text: '返事（確認ずみ）', color: NEW },
-      bubble: {
-        title: 'プログラムが確かめる',
-        lines: [{ text: '○ 書かない言葉：なし', size: 20 }, { text: '○ 約束していない内容：なし', size: 20 }, { text: '→ 送ってよい', bold: true, color: NEW }],
-      },
-    },
-    { move: '34' },
-    {
-      at: 'p4', dur: 2.4, loop: 2, caption: '確かめた返事を、お客様へ送る',
-      bubble: { title: 'プログラムが送る', lines: [{ text: '→ お客様の画面に出す', bold: true, color: NEW }] },
-    },
-    { move: 'reply', dur: 2.0 },
-    {
-      at: 'cust', dur: 4.4, loop: 3, caption: 'お客様の画面に返事が出る',
-      bubble: { title: 'チャットの返事', w: 440, color: NEW, lines: [{ text: '返品を承ります。注文番号を教えていただけますか？', at: 0.3 }] },
+      scene: { kind: 'stack', title: '費目ごとの金額を積み上げて、今月の合計にする',
+        layers: [{ label: '食料品 2,380円', color: NEW }, { label: '日用品 980円', color: PG }, { label: 'パン 640円', color: AI }],
+        label: '今月の合計 4,000円' },
+      dur: 2.6, caption: '費目ごとの金額が積み上がって、合計になる',
     },
   ],
 
-  // 締め: loop に並べた線に光を流し続ける
-  outro: { kicker: 'まとめ', caption: 'AI が判断して答え、プログラムが処理して次へ回す', hold: 3.4, loop: ['12', '23', '34', 'back'] },
+  // 締め（一方通行）: 左から右へ 1 回だけ光を流し、最後の駅で止まる
+  outro: { kicker: 'まとめ', caption: '写真を送るだけで、家計簿に 1 行増える', hold: 3.0 },
 };

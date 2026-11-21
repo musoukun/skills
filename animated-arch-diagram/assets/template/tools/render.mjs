@@ -3,7 +3,10 @@
 //   node tools/render.mjs sheet [枚数=16]         → out/sheet.png（全体を等間隔に撮ったコンタクトシート、時刻入り）
 //   node tools/render.mjs stills 2.5,7.1         → out/still-<秒>.png（原寸 1920×1080）
 //   node tools/render.mjs video [名前=diagram]    → out/<名前>.mp4（X向け H.264 30fps）+ <名前>.gif（15MB以下）+ <名前>-poster.png
+//   node tools/render.mjs check --page carry.html → 書き出す前の確かめ（運搬型）。通らない所があれば一覧を出して止まる
 //   どれにも --page carry.html を付けると、運搬型（carry-spec.js + carry.js）を撮る。既定は index.html（構成図型）
+//   --spec <ファイル> で、運搬型の中身を carry-spec.js 以外にできる（例: --spec examples/carry-loop-spec.js）
+//   video は、運搬型の確かめが通らないと書き出さない。どうしても書き出すときだけ --force
 import { chromium } from 'playwright-core';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -18,6 +21,10 @@ fs.mkdirSync(out, { recursive: true });
 const argv = process.argv.slice(2);
 const pageAt = argv.indexOf('--page');
 const PAGE = pageAt >= 0 ? argv.splice(pageAt, 2)[1] : 'index.html';
+const specAt = argv.indexOf('--spec');
+const SPEC = specAt >= 0 ? argv.splice(specAt, 2)[1] : null;
+const forceAt = argv.indexOf('--force');
+const FORCE = forceAt >= 0 ? !!argv.splice(forceAt, 1) : false;
 const [mode = 'info', ...args] = argv;
 
 // Chromium の場所: 環境変数 ARCH_CHROME → Playwright のキャッシュ（新しい版から）→ インストール済み Chrome
@@ -56,13 +63,25 @@ const browser = await chromium.launch({ ...findChrome(), headless: true });
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1.2 });
 page.on('console', (m) => console.log('[page]', m.text()));
 page.on('pageerror', (e) => console.error('[pageerror]', e.message));
-await page.goto(pathToFileURL(path.join(root, PAGE)).href + '?render');
+await page.goto(pathToFileURL(path.join(root, PAGE)).href + '?render' + (SPEC ? `&spec=${encodeURIComponent(SPEC)}` : ''));
 await page.waitForFunction(() => window.ARCH && ARCH.ready === true, null, { timeout: 120000 });
 const { duration: DUR, fps: FPS, posterTime, phases } = await page.evaluate(() => ({ ...ARCH, render: undefined }));
 const shot = async (t, type = 'png', stamp = false) => {
   await page.evaluate(([tt, s]) => ARCH.render(tt, { stamp: s }), [t, stamp]);
   return page.screenshot(type === 'png' ? { type } : { type, quality: 95 });
 };
+
+// 運搬型の確かめ。check はいつも、video は書き出す前に走らせる
+if (mode === 'check' || mode === 'video') {
+  const warns = await page.evaluate(() => (ARCH.check ? ARCH.check() : []));
+  warns.forEach((w) => console.log('確かめ:', w));
+  if (mode === 'check' && !warns.length) console.log('確かめ: OK');
+  if (warns.length && (mode === 'check' || !FORCE)) {
+    if (mode === 'video') console.log('確かめが通らないので書き出しません。中身（spec）を直してから、もう一度 video を実行する');
+    await browser.close();
+    process.exit(1);
+  }
+}
 
 if (mode === 'info') {
   console.log(`duration ${DUR.toFixed(2)}s  fps ${FPS}  frames ${Math.round(DUR * FPS)}  poster ${posterTime.toFixed(2)}s`);

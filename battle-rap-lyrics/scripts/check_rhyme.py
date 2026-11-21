@@ -3,7 +3,7 @@
 # dependencies = ["fugashi", "unidic-lite"]
 # ///
 """歌詞の行の終わりの母音を出して、前の行と何個そろっているかを数える。
-行の中の韻も数える。空白で区切った言葉どうしで、終わりから母音が何個そろうかを見る。
+行の中の韻も数える。空白で区切った言葉どうしで、終わりどうしと頭どうしの母音が何個そろうかを見る。
 
 漢字の読みは fugashi（辞書は unidic-lite）で、前後の言葉を見て付ける。
 読みを間違えることがあるので、出てきた「よみ」も見る。
@@ -81,13 +81,23 @@ def match_count(a, b):
     return n
 
 
+def head_count(a, b):
+    """2 つの母音の並びが、頭から何個そろっているかを数える。「っ」「ん」は飛ばす。"""
+    a = [v for v in a if v not in "QN"]
+    b = [v for v in b if v not in "QN"]
+    n = 0
+    while n < min(len(a), len(b)) and a[n] == b[n]:
+        n += 1
+    return n
+
+
 def inner_count(line):
-    """行を空白で区切り、言葉どうしで終わりの母音がいちばん多くそろう数を返す。"""
+    """行を空白で区切り、言葉どうしで母音がいちばん多くそろう数を返す。終わりどうしと、頭どうしの両方を見る。"""
     segs = [to_vowels(to_hira(seg)) for seg in line.split()]
     best = 0
     for i in range(len(segs)):
         for j in range(i + 1, len(segs)):
-            best = max(best, match_count(segs[i], segs[j]))
+            best = max(best, match_count(segs[i], segs[j]), head_count(segs[i], segs[j]))
     return best
 
 

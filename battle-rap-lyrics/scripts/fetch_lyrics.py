@@ -7,13 +7,17 @@
 対応しているサイト:
   j-lyric.net / petitlyrics.com / s.awa.fm / lyricstranslate.com / utaten.com
 
-ページのタイトルをファイル名にして保存する。保存先は、指定が無ければこのスキルの references フォルダ。
+保存先は、指定が無ければこのスキルの references/lyrics フォルダ（git では除外している）。
 
 使い方:
-  uv run scripts/fetch_lyrics.py <URL> [<URL> ...]           references に保存する
+  uv run scripts/fetch_lyrics.py
+      URL を渡さないと、lyrics_sources.txt に書いた歌詞のうち、まだ無いものを、
+      そこに書いたファイル名で保存する
+  uv run scripts/fetch_lyrics.py <URL> [<URL> ...]
+      ページのタイトルをファイル名にして、references/lyrics に保存する
   uv run scripts/fetch_lyrics.py <URL> -d ~/Desktop/lyrics   指定したフォルダに保存する
   pbpaste | grep http | xargs uv run scripts/fetch_lyrics.py
-      クリップボードの URL をまとめて取り、references に保存する
+      クリップボードの URL をまとめて取り、references/lyrics に保存する
 """
 import argparse
 import json
@@ -26,7 +30,9 @@ import requests
 from bs4 import BeautifulSoup
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
-DEFAULT_DIR = Path(__file__).resolve().parent.parent / "references"
+SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_DIR = SCRIPT_DIR.parent / "references" / "lyrics"
+SOURCES = SCRIPT_DIR / "lyrics_sources.txt"
 
 
 def block_text(el, remove=""):
@@ -106,15 +112,34 @@ def safe_name(title):
     return re.sub(r'[\\/:*?"<>|]', "_", title).strip()[:100]
 
 
+def read_sources():
+    """lyrics_sources.txt から (ファイル名, URL) の並びを読む"""
+    pairs = []
+    for line in SOURCES.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            name, url = line.split(maxsplit=1)
+            pairs.append((name, url))
+    return pairs
+
+
 def main():
     p = argparse.ArgumentParser(description="歌詞サイトの URL から歌詞を取り出す")
-    p.add_argument("urls", nargs="+")
+    p.add_argument("urls", nargs="*", help=f"省略すると {SOURCES.name} の歌詞のうち、まだ無いものを取る")
     p.add_argument("-d", "--out-dir", type=Path, default=DEFAULT_DIR,
                    help=f"保存するフォルダ（既定: {DEFAULT_DIR}）")
     args = p.parse_args()
+    out_dir = args.out_dir.expanduser()
+
+    if args.urls:
+        jobs = [(None, url) for url in args.urls]
+    else:
+        jobs = [(name, url) for name, url in read_sources() if not (out_dir / name).exists()]
+        if not jobs:
+            print(f"{SOURCES.name} の歌詞は、すべて {out_dir} にある", file=sys.stderr)
 
     failed = False
-    for url in args.urls:
+    for name, url in jobs:
         try:
             title, text = fetch(url)
             if not text:
@@ -124,7 +149,7 @@ def main():
             failed = True
             continue
 
-        out = args.out_dir.expanduser() / f"{safe_name(title)}.txt"
+        out = out_dir / (name or f"{safe_name(title)}.txt")
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(f"{url}\n\n{text}\n", encoding="utf-8")
         print(f"保存: {out}", file=sys.stderr)

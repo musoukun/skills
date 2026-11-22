@@ -269,7 +269,7 @@ def longest_inner(ms):
 
 
 def inner_count(line):
-    """行の中で、母音が続けていちばん長くそろう数（find_punchlines.py から使う）"""
+    """行の中で、母音が続けていちばん長くそろう数"""
     return longest_inner(parse(line)[1])[0]
 
 

@@ -131,6 +131,11 @@ MC バトルの記事 12 本から 134 行を集めて、文の形で分けた�
 | `lyrics/chip-n-dale.txt` | Chip 'n' Dale |
 | `lyrics/rgto.txt` | RGTO |
 | `lyrics/impact.txt` | 韻波句徒（インパクト） |
+| `lyrics/life-stash.txt` | LIFE STASH |
+| `lyrics/221.txt` | 221 |
+| `lyrics/rep.txt` | Rep feat. MACCHO |
+| `lyrics/have-a-good-time.txt` | Have A Good Time feat. AKLO |
+| `lyrics/jimoto-love.txt` | 地元LOVE。ユーザーが会話に貼った歌詞を保存したもの。取得元の URL が無いので、`fetch_lyrics.py` では取れない |
 
 ### 1 章「MC バトルの決め手の行の型」の実例
 
@@ -231,6 +236,7 @@ MC バトルの記事は、全部ページ本文まで開いた。行の振り�
 - 「RGTO」 https://lyricstranslate.com/en/aklo-rgto-lyrics.html 。このページは、要約を通してしか読めていない。
 - 「韻波句徒（インパクト）」 https://utaten.com/lyric/jb10811542/
 
-このあと、「LIFE STASH」と「221」を `scripts/lyrics_sources.txt` に足した。この 2 曲は、この章の型を数えるときには使っていない。
+このあと、「LIFE STASH」「221」「Rep feat. MACCHO」「Have A Good Time feat. AKLO」を `scripts/lyrics_sources.txt` に足し、「地元LOVE」をユーザーに貼ってもらった。この 5 曲は、この章の型を数えるときには使っていない。
+「Rep feat. MACCHO」は、取得元のページに MACCHO のバースが無い。
 
 型の分け方と名前は、このスキルを作るときに決めた。

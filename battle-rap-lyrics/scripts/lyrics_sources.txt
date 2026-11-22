@@ -10,3 +10,4 @@ life-stash.txt https://s.awa.fm/track/09d69ef92812dfd07b76
 221.txt https://s.awa.fm/track/0ad696fc2417dfd07b76
 rep.txt https://petitlyrics.com/lyrics/3238725
 have-a-good-time.txt https://petitlyrics.com/lyrics/3238879
+star.txt https://utaten.com/lyric/sz26111901/
